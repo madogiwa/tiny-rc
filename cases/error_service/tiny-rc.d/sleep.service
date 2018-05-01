@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "$0 - begin"
+sleep 1
+echo "service stopped"
+exit 2

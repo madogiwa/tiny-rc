@@ -1,0 +1,348 @@
+#!/bin/sh
+##
+## Tiny rc (run commands) script for Linux containers
+##
+
+##
+## environments
+##
+
+: ${TINYRC_INIT_DIR:="/tiny-rc.d"}
+: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT:=3}
+: ${TINYRC_LIVENESS_PROBE_INTERVAL:=5}
+: ${TINYRC_SHUTDOWN_PROBE_INTERVAL:=3}
+: ${TINYRC_SHUTDOWN_TIMEOUT:=120}
+: ${TINYRC_SHUTDOWN_SIGNAL:="TERM"}
+: ${TINYRC_DISABLE_LOGGING:=}
+: ${TINYRC_LOG_LEVEL:=5}
+
+
+##
+## errors
+##
+
+ERROR_GENERAL=1
+ERROR_RUN_UNIT_FAILED=2
+ERROR_RUN_SERVICE_FAILED=3
+
+
+##
+## logging
+##
+
+LOG_STR_LEVEL9="DEBUG"
+LOG_STR_LEVEL7="INFO "
+LOG_STR_LEVEL5="WARN "
+LOG_STR_LEVEL3="ERROR"
+
+LOG_DEBUG=9
+LOG_INFO=7
+LOG_WARN=5
+LOG_ERROR=3
+
+log() {
+    level="${2}"
+
+    ## defaul log level is LOG_DEBUG
+    if [ "${level}" = "" ]; then
+        level="${LOG_DEBUG}"
+    fi
+
+    if [ ${level} -le ${TINYRC_LOG_LEVEL} ]; then
+        if [ ! -n "$TINYRC_DISABLE_LOGGING" ]; then
+            lstr="LOG_STR_LEVEL${level}"
+            lstr=`eval echo \"'$'${lstr}\"`
+            echo "${lstr}: ${1}" >&2
+        fi
+    fi
+}
+
+
+##
+## functions
+##
+
+send_signal() {
+    signal=$1
+    for i in $2; do
+        log "send signal ${signal} to $i"
+        kill "-${signal}" ${i}
+    done
+}
+
+broadcast_sigterm() {
+    kill -TERM 1
+}
+
+panic() {
+    log "panic"
+    broadcast_sigterm
+}
+
+file_busy_wait() {
+    log "file_busy_wait begin: ${1} ${2}"
+
+    count=0
+    while :
+    do
+        if [ -s ${1} ]; then
+            break
+        fi
+
+        count=`expr ${count} + 1`
+        if [ ${count} -gt ${2} ]; then
+            panic
+        fi
+
+        sleep 1
+    done
+
+    log "file_busy_wait end"
+
+    cat ${1}
+}
+
+
+##
+## start
+##
+
+log "start tiny-rc.d", ${LOG_INFO}
+
+
+##
+## dump environments
+##
+
+log "dump environemnts begin"
+log "TINYRC_INIT_DIR: ${TINYRC_INIT_DIR}"
+log "TINYRC_LIVENESS_PROBE_INITIAL_WAIT: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}"
+log "TINYRC_LIVENESS_PROBE_INTERVAL: ${TINYRC_LIVENESS_PROBE_INTERVAL}"
+log "TINYRC_SHUTDOWN_PROBE_INTERVAL: ${TINYRC_SHUTDOWN_PROBE_INTERVAL}"
+log "TINYRC_SHUTDOWN_TIMEOUT: ${TINYRC_SHUTDOWN_TIMEOUT}"
+log "TINYRC_SHUTDOWN_SIGNAL: ${TINYRC_SHUTDOWN_SIGNAL}"
+log "TINYRC_DISABLE_LOGGING: ${TINYRC_DISABLE_LOGGING}"
+log "TINYRC_LOG_LEVEL: ${TINYRC_LOG_LEVEL}"
+log "dump environemnts end"
+
+
+##
+## find units and services
+##
+
+service_list=""
+unit_list=""
+
+log "find units and services begin"
+
+for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
+    script="${i}"
+
+    log "check ${script}"
+
+    [ -d ${script} ] && continue
+    [ ! -e ${script} ] && continue
+    [ ! -x ${script} ] && continue
+
+    log "${script} is executable"
+
+    echo "${script}" | grep ".unit" > /dev/null
+    if [ $? -eq 0 ]; then
+        log "mark ${script} as unit", ${LOG_INFO}
+        unit_list="${unit_list} ${script}"
+    fi
+
+    echo "${script}" | grep ".service$" > /dev/null
+    if [ $? -eq 0 ]; then
+        log "mark ${script} as service", ${LOG_INFO}
+        service_list="${service_list} ${script}"
+    fi
+done
+
+log "find units and services end"
+log "unit_list: ${unit_list}"
+log "service_list: ${service_list}"
+
+
+##
+## run units
+##
+
+log "run units begin"
+
+for i in ${unit_list}; do
+    log "run unit ${i}", ${LOG_INFO}
+    ${i}
+    RET=$?
+    if [ "$RET" -ne 0 ]; then
+        log "unit ${i} return error - $RET", ${LOG_ERROR}
+        exit ${ERROR_RUN_UNIT_FAILED}
+    fi
+done
+
+log "run units end"
+
+
+##
+## run services
+##
+
+log "run services begin"
+
+service_pids=""
+main_process_pid=""
+
+for i in ${service_list}; do
+    log "run service ${i}", ${LOG_INFO}
+    ${i} &
+    RET=$?
+    PID=$!
+    service_pids="${service_pids} ${PID}"
+    if [ "$RET" -ne 0 ]; then
+        log "service ${i} return error - $RET", ${LOG_ERROR}
+        exit ${ERROR_RUN_SERVICE_FAILED}
+    fi
+done
+
+log "run services end"
+
+
+##
+## run main process
+##
+
+log "run main process begin"
+log "cmd: $*"
+
+pid_file=`mktemp`
+ret_file=`mktemp`
+
+(
+    trap ":" HUP INT QUIT TERM
+
+    $* &
+    pid=$!
+
+    tmpfile=`mktemp`
+    echo ${pid} > ${tmpfile}
+    mv ${tmpfile} ${pid_file}
+
+    wait ${pid}
+    ret=$?
+
+    tmpfile=`mktemp`
+    echo ${ret} > ${tmpfile}
+    mv ${tmpfile} ${ret_file}
+) &
+
+## wait main process launched
+
+main_process_pid=`file_busy_wait ${pid_file} 5`
+
+log "main_process_pid: ${main_process_pid}"
+
+log "run main process end"
+
+
+##
+## liveness probe loop
+##
+
+log "begin liveness probe loop", ${LOG_INFO}
+
+## initial wait
+log "live probe initial wait ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
+sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
+
+## (TODO: implement signal handler) enable signal handler
+log "enable signal handler"
+
+trap ":" HUP INT QUIT TERM
+
+liveness=0;
+while [ ${liveness} -eq 0 ]
+do
+    log "liveness probe begin"
+
+    ## check main process
+    if [ ! -e "/proc/{main_process_pid}" ]; then
+        liveness=1
+        break
+    fi
+
+    ## check services
+    for i in ${service_pids}; do
+        if [ ! -e "/proc/${i}" ]; then
+            livensss=2
+            break 2
+        fi
+    done
+
+    #trap 'handle_sigchld' CHLD
+    log "liveness probe end"
+
+    sleep ${TINYRC_LIVENESS_PROBE_INTERVAL}
+done
+
+log "liveness probe loop end with ${liveness}", ${LOG_INFO}
+
+if [ ${liveness} -eq 2 ]; then
+    log "liveness probe loop exit with service error", ${LOG_WARN}
+fi
+
+
+##
+## shutdown probe loop
+##
+
+log "shutdown probe loop begin", ${LOG_INFO}
+
+process_all="${main_process_pid} ${service_pids}"
+
+timer=0
+while :
+do
+    log "shutdown probe begin: ${timer}"
+
+    count=0
+    for i in ${process_all}; do
+        if [ -e "/proc/${i}" ]; then
+            log "child ${i} alive"
+            count=`expr ${count} + 1`
+
+            send_signal ${TINYRC_SHUTDOWN_SIGNAL} ${i}
+        fi
+    done
+
+    log "alive ${count} children."
+
+    if [ ${count} -eq 0 ]; then
+        break
+    fi
+
+    timer=`expr ${timer} + ${TINYRC_SHUTDOWN_PROBE_INTERVAL}`
+    if [ ${timer} -ge ${TINYRC_SHUTDOWN_TIMEOUT} ]; then
+        log "shutdown timeout exceeded, send signal to init process", ${LOG_WARN}
+        send_signal ${TINYRC_SHUTDOWN_SIGNAL} 1
+    fi
+
+    log "shutdown probe end"
+    sleep ${TINYRC_SHUTDOWN_PROBE_INTERVAL}
+done
+
+log "shutdown probe loop end", ${LOG_INFO}
+
+
+##
+## process exit
+##
+
+log "get main process exit code"
+
+exit_code=`file_busy_wait ${ret_file} 5`
+
+log "main process return code is ${exit_code}."
+
+log "exit code is ${exit_code}.", ${LOG_INFO}
+
+exit ${exit_code}

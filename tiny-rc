@@ -278,7 +278,6 @@ do
         fi
     done
 
-    #trap 'handle_sigchld' CHLD
     log "liveness probe end"
 
     sleep ${TINYRC_LIVENESS_PROBE_INTERVAL}

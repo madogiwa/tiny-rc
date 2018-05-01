@@ -24,6 +24,7 @@
 ERROR_GENERAL=1
 ERROR_RUN_UNIT_FAILED=2
 ERROR_RUN_SERVICE_FAILED=3
+ERROR_PANIC=9
 
 
 ##
@@ -62,21 +63,42 @@ log() {
 ## functions
 ##
 
-send_signal() {
-    signal=$1
-    for i in $2; do
-        log "send signal ${signal} to $i"
-        kill "-${signal}" ${i}
+broadcast_signal() {
+    signal=${1}
+    for i in ${2}; do
+        if [ -e "/proc/${i}" ]; then
+            log "send signal ${signal} to $i"
+            kill "-${signal}" ${i}
+        fi
     done
 }
 
-broadcast_sigterm() {
-    kill -TERM 1
+handle_sighup() {
+    log "sighup received"
+    broadcast_signal "HUP" ${process_all}
+}
+
+handle_sigint() {
+    log "sigint received"
+    broadcast_signal "INT" ${process_all}
+}
+
+handle_sigquit() {
+    log "sigquit received"
+    broadcast_signal "QUIT" ${process_all}
+}
+
+handle_sigterm() {
+    log "sigterm received"
+    broadcast_signal "TERM" ${process_all}    
 }
 
 panic() {
-    log "panic"
-    broadcast_sigterm
+    log "panic.", ${LOG_ERROR}
+    log "send SIGTERM to init process.", ${LOG_WARN}
+    kill -TERM 1
+    log "exit with error ${ERROR_PANIC}.", ${LOG_WARN}
+    exit ${ERROR_PANIC}
 }
 
 file_busy_wait() {
@@ -241,6 +263,8 @@ main_process_pid=`file_busy_wait ${pid_file} 5`
 
 log "main_process_pid: ${main_process_pid}"
 
+process_all="${main_process_pid} ${service_pids}"
+
 log "run main process end"
 
 
@@ -248,16 +272,21 @@ log "run main process end"
 ## liveness probe loop
 ##
 
-log "begin liveness probe loop", ${LOG_INFO}
-
 ## initial wait
 log "live probe initial wait ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
 sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
 
-## (TODO: implement signal handler) enable signal handler
-log "enable signal handler"
 
-trap ":" HUP INT QUIT TERM
+## enable signal handlers
+log "enable signal handlers"
+
+trap "handle_sighup" HUP
+trap "handle_sigint" INT
+trap "handle_sigquit" QUIT
+trap "handle_sigterm" TERM
+
+
+log "begin liveness probe loop", ${LOG_INFO}
 
 liveness=0;
 while [ ${liveness} -eq 0 ]
@@ -296,8 +325,6 @@ fi
 
 log "shutdown probe loop begin", ${LOG_INFO}
 
-process_all="${main_process_pid} ${service_pids}"
-
 timer=0
 while :
 do
@@ -309,7 +336,7 @@ do
             log "child ${i} alive"
             count=`expr ${count} + 1`
 
-            send_signal ${TINYRC_SHUTDOWN_SIGNAL} ${i}
+            broadcast_signal ${TINYRC_SHUTDOWN_SIGNAL} ${i}
         fi
     done
 
@@ -321,8 +348,8 @@ do
 
     timer=`expr ${timer} + ${TINYRC_SHUTDOWN_PROBE_INTERVAL}`
     if [ ${timer} -ge ${TINYRC_SHUTDOWN_TIMEOUT} ]; then
-        log "shutdown timeout exceeded, send signal to init process", ${LOG_WARN}
-        send_signal ${TINYRC_SHUTDOWN_SIGNAL} 1
+        log "shutdown timeout exceeded, give up.", ${LOG_WARN}
+        panic
     fi
 
     log "shutdown probe end"

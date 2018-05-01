@@ -8,25 +8,25 @@ build:
 	docker build -f envs/ubuntu/Dockerfile -t tiny-rc_ubuntu .
 
 run-alpine:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 --rm tiny-rc_alpine $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 --rm tiny-rc_alpine $(TARGET_DIR)/app.sh
 
 run-alpine-it:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -it --rm tiny-rc_alpine $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 -it --rm tiny-rc_alpine $(TARGET_DIR)/app.sh
 
 run-centos:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 --rm tiny-rc_centos $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 --rm tiny-rc_centos $(TARGET_DIR)/app.sh
 
 run-centos-it:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -it --rm tiny-rc_centos $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 -it --rm tiny-rc_centos $(TARGET_DIR)/app.sh
 
 run-debian:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 --rm tiny-rc_debian $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 --rm tiny-rc_debian $(TARGET_DIR)/app.sh
 
 run-debian-it:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -it --rm tiny-rc_debian $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 -it --rm tiny-rc_debian $(TARGET_DIR)/app.sh
 
 run-ubuntu:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 --rm tiny-rc_ubuntu $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 --rm tiny-rc_ubuntu $(TARGET_DIR)/app.sh
 
 run-ubuntu-it:
-	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -it --rm tiny-rc_ubuntu $(TARGET_DIR)/app.sh
+	docker run -e TINYRC_INIT_DIR=$(TARGET_DIR)/tiny-rc.d -e TINYRC_LOG_LEVEL=9 -e TINYRC_LIVENESS_PROBE_INTERVAL=6 --it --rm tiny-rc_ubuntu $(TARGET_DIR)/app.sh

@@ -304,7 +304,7 @@ do
     ## check services
     for i in ${service_pids}; do
         if [ ! -e "/proc/${i}" ]; then
-            livensss=2
+            liveness=2
             break 2
         fi
     done

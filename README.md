@@ -65,4 +65,4 @@ You can customize behavior using environment value.
 |TINYRC_SHUTDOWN_TIMEOUT|120|send SIGTERM to PID 1 and exit tiny-rc when 'shutdown probe' timeout exceed.|
 |TINYRC_SHUTDOWN_SIGNAL|TERM|signal type which is sent after 'liveness probe' finished.|
 |TINYRC_DISABLE_LOGGING|(undef)|disable logging|
-|TINYRC_LOG_LEVEL|7|log level (3=ERROR, 5=WARN, 7=INFO, 9=DEBUG)|
+|TINYRC_LOG_LEVEL|5|log level (3=ERROR, 5=WARN, 7=INFO, 9=DEBUG)|

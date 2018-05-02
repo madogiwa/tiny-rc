@@ -4,7 +4,7 @@
 ##
 
 ##
-## environments
+## Environments
 ##
 
 : ${TINYRC_INIT_DIR:="/tiny-rc.d"}
@@ -14,11 +14,11 @@
 : ${TINYRC_SHUTDOWN_TIMEOUT:=120}
 : ${TINYRC_SHUTDOWN_SIGNAL:="TERM"}
 : ${TINYRC_DISABLE_LOGGING:=}
-: ${TINYRC_LOG_LEVEL:=5}
+: ${TINYRC_LOG_LEVEL:=7}
 
 
 ##
-## errors
+## Error Codes
 ##
 
 ERROR_GENERAL=1
@@ -28,7 +28,7 @@ ERROR_PANIC=9
 
 
 ##
-## logging
+## Logging
 ##
 
 LOG_STR_LEVEL9="DEBUG"
@@ -60,83 +60,86 @@ log() {
 
 
 ##
-## functions
+## Functions
 ##
 
 broadcast_signal() {
     signal=${1}
     for i in ${2}; do
         if [ -e "/proc/${i}" ]; then
-            log "send signal ${signal} to $i"
+            log "send ${signal} to $i"
             kill "-${signal}" ${i}
         fi
     done
 }
 
 handle_sighup() {
-    log "sighup received"
+    log "SIGHUP received"
     broadcast_signal "HUP" ${process_all}
 }
 
 handle_sigint() {
-    log "sigint received"
+    log "SIGINT received"
     broadcast_signal "INT" ${process_all}
 }
 
 handle_sigquit() {
-    log "sigquit received"
+    log "SIGQUIT received"
     broadcast_signal "QUIT" ${process_all}
 }
 
 handle_sigterm() {
-    log "sigterm received"
+    log "SIGTERM received"
     broadcast_signal "TERM" ${process_all}    
 }
 
 panic() {
-    log "panic.", ${LOG_ERROR}
-    log "send SIGTERM to init process.", ${LOG_WARN}
+    log "PANIC!" ${LOG_ERROR}
+    log "send SIGTERM to init process." ${LOG_WARN}
     kill -TERM 1
-    log "exit with error ${ERROR_PANIC}.", ${LOG_WARN}
+    log "exit with error ${ERROR_PANIC}." ${LOG_WARN}
     exit ${ERROR_PANIC}
 }
 
 file_busy_wait() {
-    log "file_busy_wait begin: ${1} ${2}"
+    log "file_busy_wait - begin: '${1}' ${2}"
 
-    count=0
+    timer=0
     while :
     do
+        log "file_busy_wait - check: ${timer}"
+
         if [ -s ${1} ]; then
             break
         fi
 
-        count=`expr ${count} + 1`
-        if [ ${count} -gt ${2} ]; then
+        timer=`expr ${timer} + 1`
+        if [ ${timer} -gt ${2} ]; then
+            log "Timeout exceeded while awaiting '${1}'" ${LOG_ERROR}
             panic
         fi
 
         sleep 1
     done
 
-    log "file_busy_wait end"
+    log "file_busy_wait - end"
 
     cat ${1}
 }
 
 
 ##
-## start
+## Main
 ##
 
-log "start tiny-rc.d", ${LOG_INFO}
+log "tiny-rc.d START" ${LOG_INFO}
 
 
 ##
-## dump environments
+## Dump Environments
 ##
 
-log "dump environemnts begin"
+log "dump envs - BEGIN"
 log "TINYRC_INIT_DIR: ${TINYRC_INIT_DIR}"
 log "TINYRC_LIVENESS_PROBE_INITIAL_WAIT: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}"
 log "TINYRC_LIVENESS_PROBE_INTERVAL: ${TINYRC_LIVENESS_PROBE_INTERVAL}"
@@ -145,22 +148,22 @@ log "TINYRC_SHUTDOWN_TIMEOUT: ${TINYRC_SHUTDOWN_TIMEOUT}"
 log "TINYRC_SHUTDOWN_SIGNAL: ${TINYRC_SHUTDOWN_SIGNAL}"
 log "TINYRC_DISABLE_LOGGING: ${TINYRC_DISABLE_LOGGING}"
 log "TINYRC_LOG_LEVEL: ${TINYRC_LOG_LEVEL}"
-log "dump environemnts end"
+log "dump envs - END"
 
 
 ##
-## find units and services
+## Find Units and Services
 ##
 
 service_list=""
 unit_list=""
 
-log "find units and services begin"
+log "Find Units and Services - BEGIN" ${LOG_INFO}
 
 for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
     script="${i}"
 
-    log "check ${script}"
+    log "found '${script}'"
 
     [ -d ${script} ] && continue
     [ ! -e ${script} ] && continue
@@ -170,70 +173,70 @@ for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
 
     echo "${script}" | grep ".unit" > /dev/null
     if [ $? -eq 0 ]; then
-        log "mark ${script} as unit", ${LOG_INFO}
+        log "mark '${script}' as unit" ${LOG_INFO}
         unit_list="${unit_list} ${script}"
     fi
 
     echo "${script}" | grep ".service$" > /dev/null
     if [ $? -eq 0 ]; then
-        log "mark ${script} as service", ${LOG_INFO}
+        log "mark '${script}' as service" ${LOG_INFO}
         service_list="${service_list} ${script}"
     fi
 done
 
-log "find units and services end"
-log "unit_list: ${unit_list}"
-log "service_list: ${service_list}"
+log "Find Units and Services - END" ${LOG_INFO}
+log "unit_list: [${unit_list}]"
+log "service_list: [${service_list}]"
 
 
 ##
-## run units
+## Execute Units
 ##
 
-log "run units begin"
+log "Execute Units - BEGIN" ${LOG_INFO}
 
 for i in ${unit_list}; do
-    log "run unit ${i}", ${LOG_INFO}
+    log "execute unit: '${i}'" ${LOG_INFO}
     ${i}
     RET=$?
     if [ "$RET" -ne 0 ]; then
-        log "unit ${i} return error - $RET", ${LOG_ERROR}
+        log "unit '${i}' return with error $RET" ${LOG_ERROR}
         exit ${ERROR_RUN_UNIT_FAILED}
     fi
 done
 
-log "run units end"
+log "Execute Units - END" ${LOG_INFO}
 
 
 ##
-## run services
+## Start Services
 ##
 
-log "run services begin"
+log "Start Services - BEGIN" ${LOG_INFO}
 
 service_pids=""
 main_process_pid=""
 
 for i in ${service_list}; do
-    log "run service ${i}", ${LOG_INFO}
+    log "start service: '${i}'" ${LOG_INFO}
     ${i} &
     RET=$?
     PID=$!
     service_pids="${service_pids} ${PID}"
     if [ "$RET" -ne 0 ]; then
-        log "service ${i} return error - $RET", ${LOG_ERROR}
+        log "Start service '${i}' failed with $RET." ${LOG_ERROR}
         exit ${ERROR_RUN_SERVICE_FAILED}
     fi
 done
 
-log "run services end"
+log "Start Services - END" ${LOG_INFO}
 
 
 ##
-## run main process
+## Start main process
 ##
 
-log "run main process begin"
+log "Start main process - BEGIN" ${LOG_INFO}
 log "cmd: $*"
 
 pid_file=`mktemp`
@@ -257,28 +260,26 @@ ret_file=`mktemp`
     mv ${tmpfile} ${ret_file}
 ) &
 
-## wait main process launched
-
 main_process_pid=`file_busy_wait ${pid_file} 5`
 
 log "main_process_pid: ${main_process_pid}"
 
 process_all="${main_process_pid} ${service_pids}"
 
-log "run main process end"
+log "Start main process - END" ${LOG_INFO}
 
 
 ##
-## liveness probe loop
+## Liveness probe loop
 ##
 
 ## initial wait
-log "live probe initial wait ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
+log "Liveness probe initial wait: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
 sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
 
 
 ## enable signal handlers
-log "enable signal handlers"
+log "Install signal handlers."
 
 trap "handle_sighup" HUP
 trap "handle_sigint" INT
@@ -286,12 +287,13 @@ trap "handle_sigquit" QUIT
 trap "handle_sigterm" TERM
 
 
-log "begin liveness probe loop", ${LOG_INFO}
+log "Liveness probe - BEGIN" ${LOG_INFO}
 
+timer=0
 liveness=0;
 while [ ${liveness} -eq 0 ]
 do
-    log "liveness probe begin"
+    log "Liveness probe: ${timer} sec."
 
     ## check main process
     if [ ! -e "/proc/{main_process_pid}" ]; then
@@ -307,40 +309,37 @@ do
         fi
     done
 
-    log "liveness probe end"
-
+    timer=`expr ${timer} + ${TYNYRC_LIVENESS_RPOBE_INTERVAL}`
     sleep ${TINYRC_LIVENESS_PROBE_INTERVAL}
 done
 
-log "liveness probe loop end with ${liveness}", ${LOG_INFO}
+log "Liveness probe - END: reason = ${liveness}" ${LOG_INFO}
 
 if [ ${liveness} -eq 2 ]; then
-    log "liveness probe loop exit with service error", ${LOG_WARN}
+    log "Liveness probe finished due service error." ${LOG_WARN}
 fi
 
 
 ##
-## shutdown probe loop
+## Shutdown probe loop
 ##
 
-log "shutdown probe loop begin", ${LOG_INFO}
+log "Shutdown probe - BEGIN" ${LOG_INFO}
 
 timer=0
 while :
 do
-    log "shutdown probe begin: ${timer}"
+    log "Shutdown probe: ${timer} sec."
 
     count=0
     for i in ${process_all}; do
         if [ -e "/proc/${i}" ]; then
-            log "child ${i} alive"
+            log "${i} is still alive."
             count=`expr ${count} + 1`
 
             broadcast_signal ${TINYRC_SHUTDOWN_SIGNAL} ${i}
         fi
     done
-
-    log "alive ${count} children."
 
     if [ ${count} -eq 0 ]; then
         break
@@ -348,27 +347,26 @@ do
 
     timer=`expr ${timer} + ${TINYRC_SHUTDOWN_PROBE_INTERVAL}`
     if [ ${timer} -ge ${TINYRC_SHUTDOWN_TIMEOUT} ]; then
-        log "shutdown timeout exceeded, give up.", ${LOG_WARN}
+        log "Shutdown timeout exceeded, give up." ${LOG_WARN}
         panic
     fi
 
-    log "shutdown probe end"
     sleep ${TINYRC_SHUTDOWN_PROBE_INTERVAL}
 done
 
-log "shutdown probe loop end", ${LOG_INFO}
+log "Shutdown probe - END" ${LOG_INFO}
 
 
 ##
 ## process exit
 ##
 
-log "get main process exit code"
+log "Retrieve main process exit code."
 
 exit_code=`file_busy_wait ${ret_file} 5`
 
-log "main process return code is ${exit_code}."
+log "Main process exit code is ${exit_code}."
 
-log "exit code is ${exit_code}.", ${LOG_INFO}
+log "Exit code is ${exit_code}." ${LOG_INFO}
 
 exit ${exit_code}

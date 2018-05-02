@@ -296,7 +296,7 @@ do
     log "Liveness probe: ${timer} sec."
 
     ## check main process
-    if [ ! -e "/proc/{main_process_pid}" ]; then
+    if [ ! -e "/proc/${main_process_pid}" ]; then
         liveness=1
         break
     fi
@@ -309,7 +309,7 @@ do
         fi
     done
 
-    timer=`expr ${timer} + ${TYNYRC_LIVENESS_RPOBE_INTERVAL}`
+    timer=`expr ${timer} + ${TINYRC_LIVENESS_PROBE_INTERVAL}`
     sleep ${TINYRC_LIVENESS_PROBE_INTERVAL}
 done
 

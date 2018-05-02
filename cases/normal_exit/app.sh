@@ -1,5 +1,5 @@
 #!/bin/sh
 
 echo "$0 - begin"
-sleep 3
+sleep 8
 echo "$0 - end"

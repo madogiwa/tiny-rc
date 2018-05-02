@@ -20,7 +20,7 @@ FROM alpine AS init
 RUN wget -O /dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64 && \
     chmod +x /dumb-init
 
-RUN wget -O /tiny-rc https://github.com/madogiwa/tiny-rc/releases/download/v0.1.1/tiny-rc && \
+RUN wget -O /tiny-rc https://github.com/madogiwa/tiny-rc/releases/download/v0.1.2/tiny-rc && \
     chmod +x /tiny-rc
 
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "$0 - begin"
+sleep 3
+echo "service exited, maybe send SIGTERM to main process."
+echo "$0 - end"

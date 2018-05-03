@@ -57,7 +57,7 @@ The tiny-rc does following steps.
 
 You can customize behavior using environment value.
 
-|name|defalut|description|
+|name|default value|description|
 |---|---|---|
 |TINYRC_INIT_DIR|/tiny-rc.d|directory path|
 |TINYRC_LIVENESS_PROBE_INTERVAL|30|interval of 'liveness probe'|

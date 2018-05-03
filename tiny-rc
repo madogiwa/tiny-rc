@@ -188,8 +188,8 @@ for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
 done
 
 log "Find Units and Services - END" ${LOG_INFO}
-log "unit_list: [${unit_list}]"
-log "service_list: [${service_list}]"
+log "unit_list: [${unit_list} ]"
+log "service_list: [${service_list} ]"
 
 
 ##

@@ -174,7 +174,7 @@ for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
 
     log "${script} is executable"
 
-    echo "${script}" | grep ".unit" > /dev/null &&:
+    echo "${script}" | grep ".unit$" > /dev/null &&:
     if [ $? -eq 0 ]; then
         log "mark '${script}' as unit" ${LOG_INFO}
         unit_list="${unit_list} ${script}"

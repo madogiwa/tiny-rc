@@ -308,6 +308,7 @@ log "Liveness probe initial wait: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
 sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
 
 log "Liveness probe - BEGIN" ${LOG_INFO}
+log "process_all=[${process_all}]"
 
 timer=0
 while [ ${liveness} -eq 0 ]

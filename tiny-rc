@@ -73,7 +73,11 @@ process_all=""
 ## 1: main process exited
 ## 2: a service exited
 ## 3: catch signal (INT or QUIT or TERM)
+## 4: main process launch failed
 liveness=0;
+
+## exit code of main process
+ret_file=`mktemp`
 
 
 ##
@@ -273,32 +277,37 @@ log "Start main process - BEGIN" ${LOG_INFO}
 log "cmd: $*"
 
 pid_file=`mktemp`
-ret_file=`mktemp`
 
-(
-    set -e
-    trap ":" HUP INT QUIT TERM
+if [ -x "${1}" ]; then
+    (
+        set -e
+        trap ":" HUP INT QUIT TERM
 
-    "$*" &
-    pid=${!}
+        $* &
+        pid=${!}
 
-    tmpfile=`mktemp`
-    echo ${pid} > ${tmpfile}
-    mv ${tmpfile} ${pid_file}
+        tmpfile=`mktemp`
+        echo ${pid} > ${tmpfile}
+        mv ${tmpfile} ${pid_file}
 
-    wait ${pid} &&:
-    ret=${?}
+        wait ${pid} &&:
+        ret=${?}
 
-    tmpfile=`mktemp`
-    echo ${ret} > ${tmpfile}
-    mv ${tmpfile} ${ret_file}
-) &
+        tmpfile=`mktemp`
+        echo ${ret} > ${tmpfile}
+        mv ${tmpfile} ${ret_file}
+    ) &
 
-main_process_pid=`file_busy_wait ${pid_file} 5`
+    main_process_pid=`file_busy_wait ${pid_file} 5`
 
-log "main_process_pid: ${main_process_pid}"
+    log "main_process_pid: ${main_process_pid}"
 
-process_all="${main_process_pid} ${process_all}"
+    process_all="${main_process_pid} ${process_all}"
+else
+    log "'${1}' is not executable." ${LOG_ERROR}
+    echo ${ERROR_GENERAL} > ${ret_file}
+    liveness=4
+fi
 
 log "Start main process - END" ${LOG_INFO}
 

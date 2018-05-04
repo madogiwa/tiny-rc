@@ -63,6 +63,20 @@ log() {
 
 
 ##
+## Global Variables
+##
+
+## process pids of main and services
+process_all=""
+
+## 0: normal
+## 1: main process exited
+## 2: a service exited
+## 3: catch signal (INT or QUIT or TERM)
+liveness=0;
+
+
+##
 ## Functions
 ##
 
@@ -83,16 +97,19 @@ handle_sighup() {
 
 handle_sigint() {
     log "SIGINT received"
+    liveness=3
     broadcast_signal "INT" "${process_all}"
 }
 
 handle_sigquit() {
     log "SIGQUIT received"
+    liveness=3
     broadcast_signal "QUIT" "${process_all}"
 }
 
 handle_sigterm() {
     log "SIGTERM received"
+    liveness=3
     broadcast_signal "TERM" "${process_all}"
 }
 
@@ -293,7 +310,6 @@ sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
 log "Liveness probe - BEGIN" ${LOG_INFO}
 
 timer=0
-liveness=0;
 while [ ${liveness} -eq 0 ]
 do
     log "Liveness probe: ${timer} sec."
@@ -320,6 +336,9 @@ log "Liveness probe - END: reason = ${liveness}" ${LOG_INFO}
 
 if [ ${liveness} -eq 2 ]; then
     log "Liveness probe finished due service error." ${LOG_WARN}
+fi
+if [ ${liveness} -eq 3 ]; then
+    log "Liveness probe finished due receive signal." ${LOG_WARN}
 fi
 
 

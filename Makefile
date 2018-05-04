@@ -38,6 +38,7 @@ run-alpine-all:
 	@-make run-alpine TARGET_DIR=/cases/error_service
 	@-make run-alpine TARGET_DIR=/cases/error_shutdown
 	@-make run-alpine TARGET_DIR=/cases/file_not_found
+	@-make run-alpine TARGET_DIR=/cases/error_mainonly
 
 run-centos-all:
 	@-make run-centos TARGET_DIR=/cases/normal_exit
@@ -46,6 +47,7 @@ run-centos-all:
 	@-make run-centos TARGET_DIR=/cases/error_service
 	@-make run-centos TARGET_DIR=/cases/error_shutdown
 	@-make run-centos TARGET_DIR=/cases/file_not_found
+	@-make run-centos TARGET_DIR=/cases/error_mainonly
 
 run-debian-all:
 	@-make run-debian TARGET_DIR=/cases/normal_exit
@@ -54,6 +56,7 @@ run-debian-all:
 	@-make run-debian TARGET_DIR=/cases/error_service
 	@-make run-debian TARGET_DIR=/cases/error_shutdown
 	@-make run-debian TARGET_DIR=/cases/file_not_found
+	@-make run-debian TARGET_DIR=/cases/error_mainonly
 
 run-ubuntu-all:
 	@-make run-ubuntu TARGET_DIR=/cases/normal_exit
@@ -62,3 +65,4 @@ run-ubuntu-all:
 	@-make run-ubuntu TARGET_DIR=/cases/error_service
 	@-make run-ubuntu TARGET_DIR=/cases/error_shutdown
 	@-make run-ubuntu TARGET_DIR=/cases/file_not_found
+	@-make run-ubuntu TARGET_DIR=/cases/error_mainonly

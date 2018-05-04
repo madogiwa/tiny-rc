@@ -179,29 +179,33 @@ unit_list=""
 
 log "Find Units and Services - BEGIN" ${LOG_INFO}
 
-for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
-    script="${i}"
+if [ -d "${TINYRC_INIT_DIR}" ]; then
+    for i in `LC_ALL=C; ls ${TINYRC_INIT_DIR}/*`; do
+        script="${i}"
 
-    log "found '${script}'"
+        log "found '${script}'"
 
-    [ -d ${script} ] && continue
-    [ ! -e ${script} ] && continue
-    [ ! -x ${script} ] && continue
+        [ -d ${script} ] && continue
+        [ ! -e ${script} ] && continue
+        [ ! -x ${script} ] && continue
 
-    log "${script} is executable"
+        log "${script} is executable"
 
-    echo "${script}" | grep ".unit$" > /dev/null &&:
-    if [ $? -eq 0 ]; then
-        log "mark '${script}' as unit" ${LOG_INFO}
-        unit_list="${unit_list} ${script}"
-    fi
+        echo "${script}" | grep ".unit$" > /dev/null &&:
+        if [ $? -eq 0 ]; then
+            log "mark '${script}' as unit" ${LOG_INFO}
+            unit_list="${unit_list} ${script}"
+        fi
 
-    echo "${script}" | grep ".service$" > /dev/null &&:
-    if [ $? -eq 0 ]; then
-        log "mark '${script}' as service" ${LOG_INFO}
-        service_list="${service_list} ${script}"
-    fi
-done
+        echo "${script}" | grep ".service$" > /dev/null &&:
+        if [ $? -eq 0 ]; then
+            log "mark '${script}' as service" ${LOG_INFO}
+            service_list="${service_list} ${script}"
+        fi
+    done
+else
+    log "${TINYRC_INIT_DIR} is not a directory." ${LOG_WARN}
+fi
 
 log "Find Units and Services - END" ${LOG_INFO}
 log "unit_list: [${unit_list} ]"
@@ -275,7 +279,7 @@ ret_file=`mktemp`
     set -e
     trap ":" HUP INT QUIT TERM
 
-    $* &
+    "$*" &
     pid=${!}
 
     tmpfile=`mktemp`

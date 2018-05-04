@@ -60,9 +60,9 @@ You can customize behavior using environment value.
 |name|default value|description|
 |---|---|---|
 |TINYRC_INIT_DIR|/tiny-rc.d|directory path|
-|TINYRC_LIVENESS_PROBE_INTERVAL|30|interval of 'liveness probe'|
-|TINYRC_SHUTDOWN_PROBE_INTERVAL|3|interval of 'shutdown probe'|
-|TINYRC_SHUTDOWN_TIMEOUT|120|send SIGTERM to PID 1 and exit tiny-rc when 'shutdown probe' timeout exceed.|
+|TINYRC_LIVENESS_PROBE_INTERVAL|5|interval of 'liveness probe'|
+|TINYRC_SHUTDOWN_PROBE_INTERVAL|2|interval of 'shutdown probe'|
+|TINYRC_SHUTDOWN_TIMEOUT|90|send SIGTERM to PID 1 and exit tiny-rc when 'shutdown probe' timeout exceed.|
 |TINYRC_SHUTDOWN_SIGNAL|TERM|signal type which is sent after 'liveness probe' finished.|
 |TINYRC_DISABLE_LOGGING|(undef)|disable logging|
 |TINYRC_LOG_LEVEL|5|log level (3=ERROR, 5=WARN, 7=INFO, 9=DEBUG)|

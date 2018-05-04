@@ -3,8 +3,8 @@
 ## init
 ##
 FROM alpine AS init
-RUN wget -O /dumb-init `wget -O - -q https://api.github.com/repos/Yelp/dumb-init/releases/latest | grep browser_download_url | grep -E '_amd64"$' | cut -d '"' -f 4` && \
-    chmod +x /dumb-init
+RUN wget -O /tini `wget -O - -q https://api.github.com/repos/krallin/tini/releases/latest | grep browser_download_url | grep -E 'tini-static-amd64"$' | cut -d '"' -f 4` && \
+    chmod +x /tini
 
 COPY tiny-rc /tiny-rc
 
@@ -15,8 +15,8 @@ COPY tiny-rc /tiny-rc
 
 FROM centos
 
-COPY --from=init /dumb-init /dumb-init
+COPY --from=init /tini /tini
 COPY --from=init /tiny-rc /tiny-rc
-ENTRYPOINT ["/dumb-init", "--", "/tiny-rc"]
+ENTRYPOINT ["/tini", "--", "/tiny-rc"]
 
 COPY cases /cases

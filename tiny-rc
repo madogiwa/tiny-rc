@@ -78,22 +78,22 @@ broadcast_signal() {
 
 handle_sighup() {
     log "SIGHUP received"
-    broadcast_signal "HUP" ${process_all}
+    broadcast_signal "HUP" "${process_all}"
 }
 
 handle_sigint() {
     log "SIGINT received"
-    broadcast_signal "INT" ${process_all}
+    broadcast_signal "INT" "${process_all}"
 }
 
 handle_sigquit() {
     log "SIGQUIT received"
-    broadcast_signal "QUIT" ${process_all}
+    broadcast_signal "QUIT" "${process_all}"
 }
 
 handle_sigterm() {
     log "SIGTERM received"
-    broadcast_signal "TERM" ${process_all}    
+    broadcast_signal "TERM" "${process_all}"
 }
 
 panic() {
@@ -152,7 +152,6 @@ log "TINYRC_SHUTDOWN_SIGNAL: ${TINYRC_SHUTDOWN_SIGNAL}"
 log "TINYRC_DISABLE_LOGGING: ${TINYRC_DISABLE_LOGGING}"
 log "TINYRC_LOG_LEVEL: ${TINYRC_LOG_LEVEL}"
 log "dump envs - END"
-
 
 ##
 ## Find Units and Services
@@ -215,6 +214,14 @@ log "Execute Units - END" ${LOG_INFO}
 ## Start Services
 ##
 
+## enable signal handlers
+log "Install signal handlers."
+
+trap "handle_sighup" HUP
+trap "handle_sigint" INT
+trap "handle_sigquit" QUIT
+trap "handle_sigterm" TERM
+
 log "Start Services - BEGIN" ${LOG_INFO}
 
 service_pids=""
@@ -231,6 +238,8 @@ for i in ${service_list}; do
         exit ${ERROR_RUN_SERVICE_FAILED}
     fi
 done
+
+process_all="${service_pids}"
 
 log "Start Services - END" ${LOG_INFO}
 
@@ -268,7 +277,7 @@ main_process_pid=`file_busy_wait ${pid_file} 5`
 
 log "main_process_pid: ${main_process_pid}"
 
-process_all="${main_process_pid} ${service_pids}"
+process_all="${main_process_pid} ${process_all}"
 
 log "Start main process - END" ${LOG_INFO}
 
@@ -280,16 +289,6 @@ log "Start main process - END" ${LOG_INFO}
 ## initial wait
 log "Liveness probe initial wait: ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT} sec."
 sleep ${TINYRC_LIVENESS_PROBE_INITIAL_WAIT}
-
-
-## enable signal handlers
-log "Install signal handlers."
-
-trap "handle_sighup" HUP
-trap "handle_sigint" INT
-trap "handle_sigquit" QUIT
-trap "handle_sigterm" TERM
-
 
 log "Liveness probe - BEGIN" ${LOG_INFO}
 

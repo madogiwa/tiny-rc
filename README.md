@@ -1,6 +1,42 @@
 
-This is "rc" script for Linux containers implement by shell only.
-The tiny-rc supported various containers such as:
+This is "rc" script for multi-process Linux containers implement by shell script only.
+
+## What is useful for this?
+
+Sometimes, to make a multi-process container is inevitable.
+A simple approach to make multi-process container is write shell script as following.
+
+```
+#!/bin/sh
+cron &                  # run cron as background process
+nginx -g 'daemon off;'  # run nginx as foreground process
+
+## In Dockerfile, specify this shell script as CMD
+## CMD ["run.sh"]
+```
+
+This approach has disadvantage which do not have error handling.
+For example, even if cron dies, nginx will keep running.
+
+An other approach is introduce a supervisor program such as `supervisord`.
+Supervisor program has error handling. However, this approach has another disadvantage which is painfull of install. How to install of supervisor is depend on base image as follows.
+
+```
+## for debian
+RUN apt-get update && apt-get install -y supervisor
+
+## for alpine
+RUN apk update && apk add -u py-pip && pip install supervisor
+
+## for centos:7
+RUN yum install -y epel-release && yum install -y python-pip && pip install superisor
+
+## for ...
+RUN ...
+```
+
+The tiny-rc is implemented by shell script only. So no additional install needed.
+Also, the tiny-rc is supported various containers such as:
 
 - [alpine](https://hub.docker.com/_/alpine/)
 - [ubuntu](https://hub.docker.com/_/ubuntu/)
@@ -52,6 +88,7 @@ The tiny-rc does following steps.
 
 - Default `$TINYRC_INIT_DIR` is `/tiny-rc.d`.
 - Defalut `$TINYRC_SHUTDOWN_SIGNAL` is `TERM`.
+
 
 ## Environments
 

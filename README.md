@@ -8,7 +8,7 @@ A simple approach to make multi-process container is write shell script as follo
 
 ```
 #!/bin/sh
-cron &                  # run cron as background process
+cron                    # run cron as daemon
 nginx -g 'daemon off;'  # run nginx as foreground process
 
 ## In Dockerfile, specify this shell script as CMD

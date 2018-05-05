@@ -94,6 +94,11 @@ broadcast_signal() {
     done
 }
 
+handle_signal() {
+    log "signal ${1} received"
+    broadcast_signal ${1} "${process_all}"
+}
+
 handle_sighup() {
     log "SIGHUP received"
     broadcast_signal "HUP" "${process_all}"
@@ -242,6 +247,20 @@ log "Execute Units - END" ${LOG_INFO}
 ## enable signal handlers
 log "Install signal handlers."
 
+log "generic signal handler from 1 to 31 without SIGCHLD"
+for i in `seq 1 31`; do
+    # ignore SIGCHLD
+    if [ ${i} -ne 17 ]; then
+        trap "handle_signal ${i}" ${i}
+    fi
+done
+
+log "generic signal handler from 34 to 64"
+for i in `seq 34 64`; do
+    trap "handle_signal ${i}" ${i}
+done
+
+log "custom signal handler for HUP, INT, QUIT, TERM"
 trap "handle_sighup" HUP
 trap "handle_sigint" INT
 trap "handle_sigquit" QUIT

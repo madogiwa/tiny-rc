@@ -65,19 +65,21 @@ RUN wget -O /tiny-rc https://github.com/madogiwa/tiny-rc/releases/download/v0.1.
 ##
 FROM debian
 
-# Tiny-rc cannot use as PID 1.
+# The tiny-rc cannot use as PID 1.
 # You need specifiy any init program into ENTRYPOINT.
 COPY --from=init /tini /tini
 COPY --from=init /tiny-rc /tiny-rc
 ENTRYPOINT ["/tini", "--", "/tiny-rc"]
+
+# (*.unit|*.service) store into tiny-rc.d if needed
 COPY tiny-rc.d /tiny-rc.d
 
-# Your app or service is specified into CMD.
+# Your main service is specified into CMD.
 COPY main_service /app/main_service 
 CMD ["/app/main_service"]
 ```
 
-The tiny-rc does following steps.
+The tiny-rc performs following steps.
 
 1. execute `*.unit` in `$TINYRC_INIT_DIR`.
 3. start `*.service` in `$TINYRC_INIT_DIR` as background process.
@@ -85,6 +87,7 @@ The tiny-rc does following steps.
 5. wait until any `*.service` or `CMD` exited. ('liveness probe')
 6. send `$TINYRC_SHUTDOWN_SIGNAL` to all `*.service` and `CMD`.
 7. wait until all `*.service` and `CMD` exited. ('shutdown probe')
+8. exit with `CMD`'s exit code.
 
 - Default `$TINYRC_INIT_DIR` is `/tiny-rc.d`.
 - Defalut `$TINYRC_SHUTDOWN_SIGNAL` is `TERM`.

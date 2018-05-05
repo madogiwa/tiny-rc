@@ -1,6 +1,6 @@
 #!/bin/sh
 ##
-## Tiny rc (run commands) script for Linux containers
+## Tiny rc (run commands) script for multi-process Linux containers
 ##
 
 ## When command fails, the shell exit immediately.
@@ -74,6 +74,7 @@ process_all=""
 ## 2: a service exited
 ## 3: catch signal (INT or QUIT or TERM)
 ## 4: main process launch failed
+## 5: main process run as foreground
 liveness=0;
 
 ## exit code of main process
@@ -322,6 +323,12 @@ if [ -x "${1}" ]; then
     log "main_process_pid: ${main_process_pid}"
 
     process_all="${main_process_pid} ${process_all}"
+elif test "${1}" = "--foreground" || test "${1}" = "-f"; then
+    log "run as foreground" ${LOG_INFO}
+    shift
+    ($@)
+    echo ${?} > ${ret_file}
+    liveness=5
 else
     log "'${1}' is not executable." ${LOG_ERROR}
     echo ${ERROR_GENERAL} > ${ret_file}

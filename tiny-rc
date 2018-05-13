@@ -303,7 +303,7 @@ if [ -x "${1}" ]; then
         set -e
         trap ":" HUP INT QUIT TERM
 
-        $* &
+        "$@" &
         pid=${!}
 
         tmpfile=`mktemp`

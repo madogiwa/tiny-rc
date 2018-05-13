@@ -282,6 +282,8 @@ for i in ${service_list}; do
         log "Start service '${i}' failed with $RET." ${LOG_ERROR}
         exit ${ERROR_RUN_SERVICE_FAILED}
     fi
+
+    sleep 1
 done
 
 process_all="${service_pids}"

@@ -56,7 +56,7 @@ FROM alpine AS init
 RUN wget -O /tini https://github.com/krallin/tini/releases/download/v0.18.0/tini-static-amd64 && \
     chmod +x /tini
 
-RUN wget -O /tiny-rc https://github.com/madogiwa/tiny-rc/releases/download/v0.1.6/tiny-rc && \
+RUN wget -O /tiny-rc https://github.com/madogiwa/tiny-rc/releases/download/v0.1.7/tiny-rc && \
     chmod +x /tiny-rc
 
 
